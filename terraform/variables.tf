@@ -5,3 +5,7 @@ variable "project" {
 variable "region" {
   default = "us-central1"
 }
+
+variable "nb_vms" {
+  default = 1
+}

@@ -6,11 +6,11 @@ resource "local_file" "ansible_inventory" {
 
 
 resource "google_compute_instance" "cloud" {
-  depends_on   = [local_file.ansible_inventory]
-  count        = 2
-  name         = "vm-${count.index}"
-  zone         = "us-central1-a"
-  machine_type = "e2-micro"
+  depends_on   =  [local_file.ansible_inventory]
+  count        =  var.nb_vms
+  name         =  "vm-${count.index}"
+  zone         =  "us-central1-a"
+  machine_type =  "e2-micro"
 
   tags = ["vms"]
 
