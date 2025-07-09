@@ -1,0 +1,4 @@
+- hosts: myhosts
+  become: true
+  roles:
+    - base

@@ -1,0 +1,36 @@
+---
+# tasks file for base
+
+- name: Uninstall old versions
+  tags: conflict
+  ansible.builtin.apt:
+    name: "{{ docker_old_versions}}"
+    state: absent
+  run_once: true
+
+- name: Install dependencies
+  tags: dependencies
+  ansible.builtin.apt:
+    name: "{{ docker_dependencies}}"
+    state: present
+
+- name: Add Docker GPG key
+  tags: Docker GPG key
+  ansible.builtin.get_url:
+    url: "{{ docker_gpg_url }}"
+    dest: "{{ docker_gpg_location }}"
+    mode: '0444'
+    force: true # Will download the file every time and replace the file if the contents change
+
+- name: Add the repository to Apt sources # You're telling your system where to find Docker software
+  tags: Apt sources
+  ansible.builtin.apt_repository:
+    repo: "{{ docker_repo }}"
+    state: present
+
+- name: Install Docker Engine
+  tags: Docker Engine
+  apt:
+    update_cache: true
+    name: "{{ docker_packages }}"
+    state: present
