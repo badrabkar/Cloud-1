@@ -1,0 +1,36 @@
+---
+# tasks file for nginx
+
+
+- name: create wordpress volume
+  tags: create_wordpress_volume
+  ansible.builtin.file:
+    path: "{{ansible_env.HOME}}/data/wordpress"
+    state: directory
+    mode: '0755'
+
+- name: copy dockerfile
+  tags: copy_nginx_dockerfile
+  copy:
+    src: Dockerfile
+    dest: "{{ansible_env.HOME}}/Inception/requirements/nginx/"
+
+- name: copy script.sh
+  tags: copy_nginx_script
+  copy:
+    src: script.sh
+    dest: "{{ansible_env.HOME}}/Inception/requirements/nginx/tools"
+
+- name: copy nginx.conf
+  tags: copy_nginx_conf
+  copy:
+    src: nginx.conf
+    dest: "{{ansible_env.HOME}}/Inception/requirements/nginx/conf"
+
+- name: build the image
+  tags: build_nginx_image
+  ansible.builtin.command: docker compose -f "{{ansible_env.HOME}}/Inception/docker-compose.yml" build  nginx
+
+- name: start the nginx container
+  tags: start_nginx_container
+  ansible.builtin.command: docker compose -f "{{ansible_env.HOME}}/Inception/docker-compose.yml" up  -d nginx
