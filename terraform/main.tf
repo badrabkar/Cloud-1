@@ -6,13 +6,17 @@ resource "local_file" "ansible_inventory" {
 
 
 resource "google_compute_instance" "cloud" {
-  depends_on   =  [local_file.ansible_inventory]
-  count        =  var.nb_vms
-  name         =  "vm-${count.index}"
-  zone         =  "us-central1-a"
-  machine_type =  "e2-micro"
+  depends_on   = [local_file.ansible_inventory]
+  count        = var.nb_vms
+  name         = "vm-${count.index}"
+  zone         = "us-central1-a"
+  machine_type = "e2-micro"
 
   tags = ["vms"]
+
+  metadata = {
+    ssh-keys = "${var.user}:${file(var.ssh_public_key)}"
+  }
 
   boot_disk {
     initialize_params {
@@ -36,42 +40,51 @@ resource "google_compute_instance" "cloud" {
 
   provisioner "local-exec" {
     command = <<-EOT
-      echo "$PUBLIC_IP ansible_ssh_common_args='-o StrictHostKeyChecking=no'" >> $ANSIBLE_INVENTORY
+      echo "$PUBLIC_IP" >> $ANSIBLE_INVENTORY
     EOT
     environment = {
       PUBLIC_IP         = self.network_interface[0].access_config[0].nat_ip
       ANSIBLE_INVENTORY = local_file.ansible_inventory.filename
     }
   }
+  provisioner "remote-exec" {
+    inline = ["cat /etc/os-release"]
+
+    connection {
+
+      type        = "ssh"
+      user        = var.user
+      host        = self.network_interface[0].access_config[0].nat_ip
+      private_key = file(var.ssh_private_key)
+    }
+  }
+
+
 }
 
 resource "google_compute_firewall" "rules" {
-  name = "my-firewall-rules"
+  name    = "my-firewall-rules"
   network = "default"
 
   allow {
     protocol = "tcp"
-    ports = ["80", "443", "22"]
+    ports    = ["80", "443", "22"]
   }
 
   source_ranges = ["0.0.0.0/0"]
   target_tags   = ["vms"]
 }
 
+resource "null_resource" "execute_ansible_playbook" {
+  depends_on = [google_compute_instance.cloud]
 
-# resource "terraform_data" "known_hosts" {
-#   depends_on = [google_compute_instance.cloud]
-
-#   provisioner "local-exec" {
-#     # This command constructs a loop in bash to iterate over the IPs
-#     # and execute your desired command for each.
-#     command = <<-EOT
-#       IPS=${join(" ", [for instance in google_compute_instance.cloud : instance.network_interface[0].access_config[0].nat_ip])}
-      
-#       echo $IPS
-#     EOT
-#   }
-# }
-
-
-
+  provisioner "local-exec" {
+    command = <<-EOT
+      ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u ${var.user}  -i $inventory --private-key ${var.ssh_private_key} $playbook 
+    EOT
+    environment = {
+      playbook  = "../ansible/main_playbook.yml"
+      inventory = "../ansible/inventory.ini"
+    }
+  }
+}

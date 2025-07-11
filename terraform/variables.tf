@@ -9,3 +9,19 @@ variable "region" {
 variable "nb_vms" {
   default = 1
 }
+
+variable "ssh_private_key" {
+  type    = string
+  default = "/home/babkar/.ssh/gcp"
+}
+
+variable "ssh_public_key" {
+  type    = string
+  default = "/home/babkar/.ssh/gcp.pub"
+}
+
+
+variable "user" {
+  type    = string
+  default = "babkar"
+}
