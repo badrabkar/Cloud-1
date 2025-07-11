@@ -1,12 +1,12 @@
 ---
 # tasks file for base
 
-- name: Uninstall old versions
-  tags: conflict
-  ansible.builtin.apt:
-    name: "{{ docker_old_versions}}"
-    state: absent
-  run_once: true
+# - name: Uninstall old versions
+#   tags: conflict
+#   ansible.builtin.apt:
+#     name: "{{ docker_old_versions}}"
+#     state: absent
+#   run_once: true
 
 - name: Install dependencies
   tags: dependencies
@@ -34,3 +34,20 @@
     update_cache: true
     name: "{{ docker_packages }}"
     state: present
+
+- name: assign domain name to the instance
+  tags: domain
+  ansible.builtin.uri:
+    url: "https://www.duckdns.org/update?domains={{ domain_name }}&token={{ token }}"
+    method: GET
+    return_content: true
+    
+- name: copy the environment and docker-compose
+  tags: preparing_dirs
+  copy:
+    src:  "{{ item }}"
+    dest: "{{ ansible_env.HOME }}/Inception/"
+    mode: 0755
+  loop:
+    - .env
+    - docker-compose.yml
