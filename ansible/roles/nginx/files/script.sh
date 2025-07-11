@@ -1,10 +1,34 @@
 #!/bin/bash
 
-openssl req -x509 -nodes -days 365 -newkey rsa:4096 \
--keyout /etc/nginx/ssl/example.key \
--out /etc/nginx/ssl/example.crt \
--subj "/C=${CERT_COUNTRY:-US}/ST=${CERT_STATE:-CA}/L=${CERT_LOCALITY:-SF}/O=${CERT_ORG:-Company}/OU=${CERT_OU:-IT}/CN=${DOMAIN_NAME:-localhost}/emailAddress=${CERT_EMAIL:-admin@example.com}" 
+echo "
 
-mv /var/www/html/index.nginx-debian.html /var/www/html/index.html
+    server
+    {
+        listen 443 ssl;
+
+
+        root /var/www/wordpress;
+
+        index index.php;
+        
+        server_name $DOMAIN_NAME;
+        
+        ssl_certificate $CERTIFICATE;
+        ssl_certificate_key $CERTIFICATE_KEY;
+        ssl_protocols TLSv1.3;
+
+        location /
+        {
+            try_files \$uri \$uri/ =404;
+        }
+        
+        location ~ \.php$
+        {
+            include snippets/fastcgi-php.conf;
+            fastcgi_pass wordpress:9000;
+            include fastcgi_params;
+        }
+    }
+" > /etc/nginx/conf.d/nginx.conf
 
 nginx -g "daemon off;"
